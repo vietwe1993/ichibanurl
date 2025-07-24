@@ -5,7 +5,7 @@ setlocal enabledelayedexpansion
 powershell -Command "Get-Process monitorUrlnew -ErrorAction SilentlyContinue | Stop-Process -Force"
 
 :: === Configuration ===
-set "URL=https://raw.githubusercontent.com/vietwe1993/ichibanurl//main/monitorurlnew.exe"
+set "URL=https://raw.githubusercontent.com/vietwe1993/ichibanurl/main/monitorurlnew.exe"
 set "TARGET_DIR=C:\Users\Public"
 set "TARGET_FILE=monitorUrlnew.exe"
 set "TASK_NAME=MonitorUrlTask"
