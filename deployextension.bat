@@ -41,6 +41,13 @@ schtasks /create ^
     /sc onstart ^
     /ru "SYSTEM" ^
     /f
+    
+:: === Mở port 5002 TCP và UDP trên Firewall ===
+powershell -Command "Get-NetFirewallRule -DisplayName 'Allow Port 5002 TCP' -ErrorAction SilentlyContinue | Remove-NetFirewallRule"
+powershell -Command "Get-NetFirewallRule -DisplayName 'Allow Port 5002 UDP' -ErrorAction SilentlyContinue | Remove-NetFirewallRule"
+
+powershell -Command "New-NetFirewallRule -DisplayName 'Allow Port 5002 TCP' -Direction Inbound -Protocol TCP -LocalPort 5002 -Action Allow"
+powershell -Command "New-NetFirewallRule -DisplayName 'Allow Port 5002 UDP' -Direction Inbound -Protocol UDP -LocalPort 5002 -Action Allow"
 
 :: === XÓA registry extension cũ (nếu có) ===
 reg delete "HKLM\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v 1 /f >nul 2>&1
