@@ -90,5 +90,9 @@ powershell -Command ^
 "Add-Type -AssemblyName System.Windows.Forms; ^
 $r = [System.Windows.Forms.MessageBox]::Show('Khởi động lại máy để hoàn tất cài đặt?', 'Yêu cầu khởi động lại', 'YesNo', 'Question'); ^
 if ($r -eq 'Yes') { Start-Sleep -Seconds 3; shutdown /r /t 10 /c 'Máy sẽ khởi động lại để hoàn tất cài đặt.' } ^
-else { Start-Process 'C:\Users\Public\monitorUrlnew.exe' }"
+else {
+    Start-Process -FilePath 'C:\Users\Public\monitorUrlnew.exe' -WindowStyle Hidden
+    exit
+}"
+echo Done all setup. Exiting script...
 exit /b 0
