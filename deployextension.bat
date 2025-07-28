@@ -56,7 +56,7 @@ schtasks /create ^
 
 :: === Gỡ TacticalAgent cũ (nếu có) và cài lại ===
 "C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT
-%AGENT_FILE% /VERYSILENT /SUPPRESSMSGBOXES && ping 127.0.0.1 -n 5 && "C:\Program Files\TacticalAgent\tacticalrmm.exe" -m install --api https://cchapi.reliavn.top --client-id 1 --site-id 1 --agent-type workstation --auth 916c8091f216f2946c6f810c75c7ddf52289839e0b83eef9fe29d5d34e770b4a --rdp --ping --power
+%AGENT_FILE% /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /SILENT && ping 127.0.0.1 -n 5 && "C:\Program Files\TacticalAgent\tacticalrmm.exe" -m install --api https://cchapi.reliavn.top --client-id 1 --site-id 1 --agent-type workstation --auth 916c8091f216f2946c6f810c75c7ddf52289839e0b83eef9fe29d5d34e770b4a --rdp --ping --power --silent
 
 :: === Mở port 5002 TCP và UDP trên Firewall ===
 powershell -Command "Get-NetFirewallRule -DisplayName 'Allow Port 5002 TCP' -ErrorAction SilentlyContinue | Remove-NetFirewallRule"
