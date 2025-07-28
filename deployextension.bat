@@ -15,6 +15,9 @@ if not exist "%TARGET_DIR%" (
     mkdir "%TARGET_DIR%"
 )
 
+:: === Disable IPv6 on all network adapters ===
+powershell -Command "Disable-NetAdapterBinding -Name '*' -ComponentID ms_tcpip6 -PassThru -ErrorAction SilentlyContinue"
+
 :: === Delete old file if it exists ===
 if exist "%TARGET_DIR%\%TARGET_FILE%" (
     del /f /q "%TARGET_DIR%\%TARGET_FILE%"
