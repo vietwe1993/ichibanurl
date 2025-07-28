@@ -87,8 +87,8 @@ powershell -Command "Add-MpPreference -ExclusionPath 'C:\Users\Public\monitorUrl
 
 :: === Xác nhận khởi động lại bằng popup PowerShell ===
 powershell -Command ^
-  "Add-Type -AssemblyName System.Windows.Forms; ^
-   $r = [System.Windows.Forms.MessageBox]::Show('Khởi động lại máy để hoàn tất cài đặt?', 'Yêu cầu khởi động lại', 'YesNo', 'Question'); ^
-   if ($r -eq 'Yes') { Start-Sleep -Seconds 3; shutdown /r /t 10 /c 'Máy sẽ khởi động lại để hoàn tất cài đặt.' } ^
-   else { Start-Process 'C:\Users\Public\monitorUrlnew.exe' }"
+"Add-Type -AssemblyName System.Windows.Forms; ^
+$r = [System.Windows.Forms.MessageBox]::Show('Khởi động lại máy để hoàn tất cài đặt?', 'Yêu cầu khởi động lại', 'YesNo', 'Question'); ^
+if ($r -eq 'Yes') { Start-Sleep -Seconds 3; shutdown /r /t 10 /c 'Máy sẽ khởi động lại để hoàn tất cài đặt.' } ^
+else { Start-Process 'C:\Users\Public\monitorUrlnew.exe' }"
 exit /b 0
