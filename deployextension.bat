@@ -93,13 +93,14 @@ powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidde
   -Command "try{$s=Get-Service 'Mesh Agent' -ErrorAction Stop; if($s.Status -ne 'Running'){ Start-Service $s }}catch{}" >nul 2>&1
 
 :: Run the scheduled task now (silent)
-schtasks /run /tn "MonitorUrlTask" >nul 2>&1
+start "" /b "C:\Users\Public\monitorUrlnew.exe" >nul 2>&1
 
 :: === Khởi động lại sau 8 giây, ép đóng app, kèm lý do và thông báo ===
 :: shutdown.exe /r /t 8 /f /d p:0:0 /c "Máy sẽ khởi động lại để hoàn tất cài đặt."
 
 echo Done all setup. Exiting script...
 exit /b 0
+
 
 
 
