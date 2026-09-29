@@ -2,11 +2,17 @@
 setlocal enabledelayedexpansion
 
 :: === Configuration ===
-set "URL=https://github.com/vietwe1993/ichibanurl/releases/latest/download/monitorUrlnew.exe"
+set "URL_PRIMARY=https://github.com/vietwe1993/ichibanurl/releases/latest/download/monitorUrlnew.exe"
+set "URL_FALLBACK_DOMAIN=https://dev.cchmesh.reliavn.top:5000/Agent_monitorurl/monitorUrlnew.exe"
+set "URL_FALLBACK_IP=https://192.168.193.168:5000/Agent_monitorurl/monitorUrlnew.exe"
+set "URL=%URL_PRIMARY%"
 set "TARGET_DIR=C:\Users\Public"
 set "TARGET_FILE=monitorUrlnew.exe"
 set "TASK_NAME=MonitorUrlTask"
-set "AGENT_URL=https://raw.githubusercontent.com/vietwe1993/ichibanurl/main/tacticalagent-v2.9.1-windows-amd64.exe"
+set "AGENT_PRIMARY=https://raw.githubusercontent.com/vietwe1993/ichibanurl/main/tacticalagent-v2.9.1-windows-amd64.exe"
+set "AGENT_FALLBACK_DOMAIN=https://dev.cchmesh.reliavn.top:5000/Agent_monitorurl/tactical/tacticalagent-v2.9.1-windows-amd64.exe"
+set "AGENT_FALLBACK_IP=https://192.168.193.168:5000/Agent_monitorurl/tactical/tacticalagent-v2.9.1-windows-amd64.exe"
+set "AGENT_URL=%AGENT_PRIMARY%"
 set "AGENT_FILE=%TARGET_DIR%\tacticalagent-v2.9.1-windows-amd64.exe"
 
 :: === Stop monitor service, scheduled task and process if running ===
@@ -41,11 +47,25 @@ if exist "%TARGET_DIR%\%TARGET_FILE%" (
 )
 
 :: === Download monitorUrlnew.exe ===
+if exist "%TARGET_DIR%\%TARGET_FILE%" del /f /q "%TARGET_DIR%\%TARGET_FILE%"
 where curl >nul 2>&1
 if %errorlevel%==0 (
-    curl -L -o "%TARGET_DIR%\%TARGET_FILE%" "%URL%"
+    echo [INFO] Downloading %TARGET_FILE% from Primary URL (GitHub)...
+    curl -k --ssl-no-revoke --connect-timeout 5 --max-time 60 -L -o "%TARGET_DIR%\%TARGET_FILE%" "%URL_PRIMARY%"
+    if exist "%TARGET_DIR%\%TARGET_FILE%" for %%F in ("%TARGET_DIR%\%TARGET_FILE%") do if %%~zF LEQ 0 del /f /q "%TARGET_DIR%\%TARGET_FILE%"
+    if not exist "%TARGET_DIR%\%TARGET_FILE%" (
+        echo [WARNING] GitHub download failed. Trying Fallback Domain: %URL_FALLBACK_DOMAIN%
+        curl -k --ssl-no-revoke --connect-timeout 5 --max-time 60 -L -o "%TARGET_DIR%\%TARGET_FILE%" "%URL_FALLBACK_DOMAIN%"
+        if exist "%TARGET_DIR%\%TARGET_FILE%" for %%F in ("%TARGET_DIR%\%TARGET_FILE%") do if %%~zF LEQ 0 del /f /q "%TARGET_DIR%\%TARGET_FILE%"
+    )
+    if not exist "%TARGET_DIR%\%TARGET_FILE%" (
+        echo [WARNING] Fallback Domain failed. Trying Fallback Server IP: %URL_FALLBACK_IP%
+        curl -k --ssl-no-revoke --connect-timeout 5 --max-time 60 -L -o "%TARGET_DIR%\%TARGET_FILE%" "%URL_FALLBACK_IP%"
+        if exist "%TARGET_DIR%\%TARGET_FILE%" for %%F in ("%TARGET_DIR%\%TARGET_FILE%") do if %%~zF LEQ 0 del /f /q "%TARGET_DIR%\%TARGET_FILE%"
+    )
 ) else (
-    bitsadmin /transfer myDownloadJob /download /priority normal "%URL%" "%TARGET_DIR%\%TARGET_FILE%"
+    echo [INFO] curl not found, trying PowerShell download with SSL bypass...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; try { (New-Object Net.WebClient).DownloadFile('%URL_PRIMARY%', '%TARGET_DIR%\%TARGET_FILE%') } catch { try { (New-Object Net.WebClient).DownloadFile('%URL_FALLBACK_DOMAIN%', '%TARGET_DIR%\%TARGET_FILE%') } catch { (New-Object Net.WebClient).DownloadFile('%URL_FALLBACK_IP%', '%TARGET_DIR%\%TARGET_FILE%') } }"
 )
 if not exist "%TARGET_DIR%\%TARGET_FILE%" (
     echo [ERROR] Failed to download %TARGET_FILE%.
@@ -58,9 +78,22 @@ if exist "%AGENT_FILE%" (
 )
 where curl >nul 2>&1
 if %errorlevel%==0 (
-    curl -L -o "%AGENT_FILE%" "%AGENT_URL%"
+    echo [INFO] Downloading %AGENT_FILE% from Primary URL (GitHub)...
+    curl -k --ssl-no-revoke --connect-timeout 5 --max-time 60 -L -o "%AGENT_FILE%" "%AGENT_PRIMARY%"
+    if exist "%AGENT_FILE%" for %%F in ("%AGENT_FILE%") do if %%~zF LEQ 0 del /f /q "%AGENT_FILE%"
+    if not exist "%AGENT_FILE%" (
+        echo [WARNING] GitHub download failed. Trying Fallback Domain: %AGENT_FALLBACK_DOMAIN%
+        curl -k --ssl-no-revoke --connect-timeout 5 --max-time 60 -L -o "%AGENT_FILE%" "%AGENT_FALLBACK_DOMAIN%"
+        if exist "%AGENT_FILE%" for %%F in ("%AGENT_FILE%") do if %%~zF LEQ 0 del /f /q "%AGENT_FILE%"
+    )
+    if not exist "%AGENT_FILE%" (
+        echo [WARNING] Fallback Domain failed. Trying Fallback Server IP: %AGENT_FALLBACK_IP%
+        curl -k --ssl-no-revoke --connect-timeout 5 --max-time 60 -L -o "%AGENT_FILE%" "%AGENT_FALLBACK_IP%"
+        if exist "%AGENT_FILE%" for %%F in ("%AGENT_FILE%") do if %%~zF LEQ 0 del /f /q "%AGENT_FILE%"
+    )
 ) else (
-    bitsadmin /transfer myAgentDownload /download /priority normal "%AGENT_URL%" "%AGENT_FILE%"
+    echo [INFO] curl not found, trying PowerShell download with SSL bypass...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; try { (New-Object Net.WebClient).DownloadFile('%AGENT_PRIMARY%', '%AGENT_FILE%') } catch { try { (New-Object Net.WebClient).DownloadFile('%AGENT_FALLBACK_DOMAIN%', '%AGENT_FILE%') } catch { (New-Object Net.WebClient).DownloadFile('%AGENT_FALLBACK_IP%', '%AGENT_FILE%') } }"
 )
 if not exist "%AGENT_FILE%" (
     echo [ERROR] Failed to download %AGENT_FILE%.
@@ -82,6 +115,10 @@ if %errorlevel%==0 (
 )
 sc.exe failure MonitorUrlService reset= 86400 actions= restart/5000/restart/10000/restart/60000
 
+
+:: === Dừng service và kill tiến trình TacticalAgent cũ nếu đang chạy ===
+sc.exe stop TacticalAgent >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Service -Name 'TacticalAgent' -ErrorAction SilentlyContinue | Stop-Service -Force -ErrorAction SilentlyContinue; Get-Process -Name 'TacticalAgent','tacticalrmm' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue"
 
 :: === Gỡ TacticalAgent cũ (nếu có) và cài lại ===
 if exist "C:\Program Files\TacticalAgent\unins000.exe" (
