@@ -16,10 +16,15 @@ set "AGENT_URL=%AGENT_PRIMARY%"
 set "AGENT_FILE=%TARGET_DIR%\tacticalagent-v2.9.1-windows-amd64.exe"
 
 :: === Stop monitor service, scheduled task and process if running ===
-sc.exe stop MonitorUrlService >nul 2>&1
 schtasks /end /tn "%TASK_NAME%" >nul 2>&1
 schtasks /delete /tn "%TASK_NAME%" /f >nul 2>&1
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$s = Get-Service -Name 'MonitorUrlService' -ErrorAction SilentlyContinue; if ($s -and $s.Status -ne 'Stopped') { Stop-Service -Name 'MonitorUrlService' -Force -ErrorAction SilentlyContinue; $until = [DateTime]::UtcNow.AddSeconds(10); while ($s.Status -ne 'Stopped' -and [DateTime]::UtcNow -lt $until) { Start-Sleep -Milliseconds 500; $s.Refresh() } }; Get-Process -Name 'monitorUrlnew' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue"
+schtasks /query /tn "%TASK_NAME%" >nul 2>&1
+if not errorlevel 1 (
+    echo [ERROR] Cannot remove scheduled task %TASK_NAME%.
+    exit /b 1
+)
+call :StopAgent MonitorUrlService monitorUrlnew
+if errorlevel 1 exit /b 1
 
 :: === Create target directory if it doesn't exist ===
 if not exist "%TARGET_DIR%" (
@@ -47,58 +52,12 @@ if exist "%TARGET_DIR%\%TARGET_FILE%" (
 )
 
 :: === Download monitorUrlnew.exe ===
-if exist "%TARGET_DIR%\%TARGET_FILE%" del /f /q "%TARGET_DIR%\%TARGET_FILE%"
-where curl >nul 2>&1
-if %errorlevel%==0 (
-    echo [INFO] Downloading %TARGET_FILE% from Primary URL (GitHub)...
-    curl -k --ssl-no-revoke --connect-timeout 5 --max-time 60 -L -o "%TARGET_DIR%\%TARGET_FILE%" "%URL_PRIMARY%"
-    if exist "%TARGET_DIR%\%TARGET_FILE%" for %%F in ("%TARGET_DIR%\%TARGET_FILE%") do if %%~zF LEQ 0 del /f /q "%TARGET_DIR%\%TARGET_FILE%"
-    if not exist "%TARGET_DIR%\%TARGET_FILE%" (
-        echo [WARNING] GitHub download failed. Trying Fallback Domain: %URL_FALLBACK_DOMAIN%
-        curl -k --ssl-no-revoke --connect-timeout 5 --max-time 60 -L -o "%TARGET_DIR%\%TARGET_FILE%" "%URL_FALLBACK_DOMAIN%"
-        if exist "%TARGET_DIR%\%TARGET_FILE%" for %%F in ("%TARGET_DIR%\%TARGET_FILE%") do if %%~zF LEQ 0 del /f /q "%TARGET_DIR%\%TARGET_FILE%"
-    )
-    if not exist "%TARGET_DIR%\%TARGET_FILE%" (
-        echo [WARNING] Fallback Domain failed. Trying Fallback Server IP: %URL_FALLBACK_IP%
-        curl -k --ssl-no-revoke --connect-timeout 5 --max-time 60 -L -o "%TARGET_DIR%\%TARGET_FILE%" "%URL_FALLBACK_IP%"
-        if exist "%TARGET_DIR%\%TARGET_FILE%" for %%F in ("%TARGET_DIR%\%TARGET_FILE%") do if %%~zF LEQ 0 del /f /q "%TARGET_DIR%\%TARGET_FILE%"
-    )
-) else (
-    echo [INFO] curl not found, trying PowerShell download with SSL bypass...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; try { (New-Object Net.WebClient).DownloadFile('%URL_PRIMARY%', '%TARGET_DIR%\%TARGET_FILE%') } catch { try { (New-Object Net.WebClient).DownloadFile('%URL_FALLBACK_DOMAIN%', '%TARGET_DIR%\%TARGET_FILE%') } catch { (New-Object Net.WebClient).DownloadFile('%URL_FALLBACK_IP%', '%TARGET_DIR%\%TARGET_FILE%') } }"
-)
-if not exist "%TARGET_DIR%\%TARGET_FILE%" (
-    echo [ERROR] Failed to download %TARGET_FILE%.
-    exit /b 1
-)
+call :DownloadExe "%TARGET_DIR%\%TARGET_FILE%" "%URL_PRIMARY%" "%URL_FALLBACK_DOMAIN%" "%URL_FALLBACK_IP%"
+if errorlevel 1 exit /b 1
 
 :: === Download tacticalagent-v2.9.1-windows-amd64.exe ===
-if exist "%AGENT_FILE%" (
-    del /f /q "%AGENT_FILE%"
-)
-where curl >nul 2>&1
-if %errorlevel%==0 (
-    echo [INFO] Downloading %AGENT_FILE% from Primary URL (GitHub)...
-    curl -k --ssl-no-revoke --connect-timeout 5 --max-time 60 -L -o "%AGENT_FILE%" "%AGENT_PRIMARY%"
-    if exist "%AGENT_FILE%" for %%F in ("%AGENT_FILE%") do if %%~zF LEQ 0 del /f /q "%AGENT_FILE%"
-    if not exist "%AGENT_FILE%" (
-        echo [WARNING] GitHub download failed. Trying Fallback Domain: %AGENT_FALLBACK_DOMAIN%
-        curl -k --ssl-no-revoke --connect-timeout 5 --max-time 60 -L -o "%AGENT_FILE%" "%AGENT_FALLBACK_DOMAIN%"
-        if exist "%AGENT_FILE%" for %%F in ("%AGENT_FILE%") do if %%~zF LEQ 0 del /f /q "%AGENT_FILE%"
-    )
-    if not exist "%AGENT_FILE%" (
-        echo [WARNING] Fallback Domain failed. Trying Fallback Server IP: %AGENT_FALLBACK_IP%
-        curl -k --ssl-no-revoke --connect-timeout 5 --max-time 60 -L -o "%AGENT_FILE%" "%AGENT_FALLBACK_IP%"
-        if exist "%AGENT_FILE%" for %%F in ("%AGENT_FILE%") do if %%~zF LEQ 0 del /f /q "%AGENT_FILE%"
-    )
-) else (
-    echo [INFO] curl not found, trying PowerShell download with SSL bypass...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; try { (New-Object Net.WebClient).DownloadFile('%AGENT_PRIMARY%', '%AGENT_FILE%') } catch { try { (New-Object Net.WebClient).DownloadFile('%AGENT_FALLBACK_DOMAIN%', '%AGENT_FILE%') } catch { (New-Object Net.WebClient).DownloadFile('%AGENT_FALLBACK_IP%', '%AGENT_FILE%') } }"
-)
-if not exist "%AGENT_FILE%" (
-    echo [ERROR] Failed to download %AGENT_FILE%.
-    exit /b 1
-)
+call :DownloadExe "%AGENT_FILE%" "%AGENT_PRIMARY%" "%AGENT_FALLBACK_DOMAIN%" "%AGENT_FALLBACK_IP%"
+if errorlevel 1 exit /b 1
 
 :: === Delete existing task if it exists ===
 schtasks /query /tn "%TASK_NAME%" >nul 2>&1
@@ -113,16 +72,28 @@ if %errorlevel%==0 (
 ) else (
     sc.exe create MonitorUrlService binPath= "\"%TARGET_DIR%\%TARGET_FILE%\" --service" start= delayed-auto DisplayName= "CCH MonitorUrl Agent Service"
 )
+if errorlevel 1 (
+    echo [ERROR] Cannot configure MonitorUrlService.
+    exit /b 1
+)
 sc.exe failure MonitorUrlService reset= 86400 actions= restart/5000/restart/10000/restart/60000
+if errorlevel 1 (
+    echo [ERROR] Cannot configure MonitorUrlService recovery.
+    exit /b 1
+)
 
 
 :: === Dừng service và kill tiến trình TacticalAgent cũ nếu đang chạy ===
-sc.exe stop TacticalAgent >nul 2>&1
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Service -Name 'TacticalAgent' -ErrorAction SilentlyContinue | Stop-Service -Force -ErrorAction SilentlyContinue; Get-Process -Name 'TacticalAgent','tacticalrmm' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue"
+call :StopAgent TacticalAgent TacticalAgent,tacticalrmm
+if errorlevel 1 exit /b 1
 
 :: === Gỡ TacticalAgent cũ (nếu có) và cài lại ===
 if exist "C:\Program Files\TacticalAgent\unins000.exe" (
-    "C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT
+    "C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+    if errorlevel 1 (
+        echo [ERROR] TacticalAgent uninstaller failed with exit code !errorlevel!.
+        exit /b 1
+    )
 )
 "%AGENT_FILE%" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /SILENT
 if %errorlevel% neq 0 (
@@ -209,10 +180,54 @@ if %errorlevel% neq 0 (
 echo Done all setup. Exiting script...
 exit /b 0
 
+:: Only terminate remaining processes after SCM confirms a clean service stop.
+:: A stuck service aborts installation instead of triggering recovery by killing it.
+:StopAgent
+set "STOP_SERVICE=%~1"
+set "STOP_PROCESSES=%~2"
+powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ^
+  "$ErrorActionPreference = 'Stop'; try { " ^
+  "  $s = Get-Service | Where-Object { $_.Name -eq $env:STOP_SERVICE }; " ^
+  "  if ($s -and $s.Status -ne 'Stopped') { " ^
+  "    if ($s.Status -ne 'StopPending') { & sc.exe stop $env:STOP_SERVICE; if ($LASTEXITCODE -ne 0) { throw 'Service stop request failed' } }; " ^
+  "    $s.WaitForStatus([System.ServiceProcess.ServiceControllerStatus]::Stopped, [TimeSpan]::FromSeconds(20)); " ^
+  "  }; " ^
+  "  $names = $env:STOP_PROCESSES.Split(','); " ^
+  "  $processes = @(Get-Process | Where-Object { $names -contains $_.ProcessName }); " ^
+  "  foreach ($p in $processes) { if (-not $p.HasExited) { Stop-Process -InputObject $p -Force; if (-not $p.WaitForExit(5000)) { throw 'Process did not exit' } } }; " ^
+  "  if (Get-Process | Where-Object { $names -contains $_.ProcessName }) { throw 'Agent process is still running' }; " ^
+  "  if ($s) { $s.Refresh(); if ($s.Status -ne 'Stopped') { throw 'Service restarted unexpectedly' } }; exit 0 " ^
+  "} catch { Write-Host ('[ERROR] Cannot stop ' + $env:STOP_SERVICE + ': ' + $_.Exception.Message); exit 1 }"
+exit /b %errorlevel%
 
-
-
-
-
-
-
+:: Download to a unique temporary file. Never accept stale or partial output.
+:DownloadExe
+set "DOWNLOAD_TARGET=%~1"
+set "DOWNLOAD_PRIMARY=%~2"
+set "DOWNLOAD_DOMAIN=%~3"
+set "DOWNLOAD_IP=%~4"
+powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ^
+  "$ErrorActionPreference = 'Stop'; $target = $env:DOWNLOAD_TARGET; $temp = $target + '.' + [Guid]::NewGuid().ToString('N') + '.part'; " ^
+  "$curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue; " ^
+  "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; " ^
+  "[Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; " ^
+  "foreach ($url in @($env:DOWNLOAD_PRIMARY, $env:DOWNLOAD_DOMAIN, $env:DOWNLOAD_IP)) { " ^
+  "  try { " ^
+  "    Write-Host ('[INFO] Downloading ' + $target + ' from ' + $url); " ^
+  "    if ($curl) { & $curl.Source --fail -k --ssl-no-revoke --connect-timeout 5 --max-time 60 -L -o $temp $url; if ($LASTEXITCODE -ne 0) { throw ('curl exit code ' + $LASTEXITCODE) } } " ^
+  "    else { " ^
+  "      $response = Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $temp -PassThru -TimeoutSec 60 -ErrorAction Stop; " ^
+  "      $length = $response.Headers['Content-Length']; " ^
+  "      if ($null -ne $length -and (Get-Item -LiteralPath $temp).Length -ne [long]$length) { throw 'Incomplete download: Content-Length mismatch' } " ^
+  "    }; " ^
+  "    $reader = [IO.BinaryReader]::new([IO.File]::OpenRead($temp)); " ^
+  "    try { if ($reader.BaseStream.Length -lt 64 -or $reader.ReadUInt16() -ne 0x5A4D) { throw 'Invalid EXE header' }; " ^
+  "      $reader.BaseStream.Position = 60; $pe = $reader.ReadInt32(); " ^
+  "      if ($pe -lt 64 -or $pe -gt ($reader.BaseStream.Length - 4)) { throw 'Invalid PE offset' }; " ^
+  "      $reader.BaseStream.Position = $pe; if ($reader.ReadUInt32() -ne 0x4550) { throw 'Invalid PE signature' } " ^
+  "    } finally { $reader.Dispose() }; " ^
+  "    Move-Item -LiteralPath $temp -Destination $target -Force; exit 0 " ^
+  "  } catch { Write-Host ('[WARNING] Download failed: ' + $_.Exception.Message) } " ^
+  "  finally { if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Force -ErrorAction SilentlyContinue } } " ^
+  "}; Write-Host ('[ERROR] All download sources failed for ' + $target); exit 1"
+exit /b %errorlevel%
